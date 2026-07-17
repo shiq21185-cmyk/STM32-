@@ -9,27 +9,25 @@ void LED_Init(void){
 	GPIO_InStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA,&GPIO_InStructure);
-	GPIO_SetBits(GPIOA,GPIO_Pin_0);
+	/* PA0 为低电平点亮。临时调试：初始化后保持常亮。 */
+	GPIO_ResetBits(GPIOA,GPIO_Pin_0);
 	
 }
 
 
 void LED0_ON(void)
 {
-GPIO_ResetBits(GPIOA,GPIO_Pin_0);
+	GPIO_ResetBits(GPIOA,GPIO_Pin_0);
 }
 void LED0_OFF(void)
 {
-GPIO_SetBits(GPIOA,GPIO_Pin_0);
+	/* 临时保持常亮，忽略关灯请求。 */
+	GPIO_ResetBits(GPIOA,GPIO_Pin_0);
 }
 void LED0_Turn(void)
 {
-    if(GPIO_ReadOutputDataBit(GPIOA,GPIO_Pin_0)==0)
-	{
-		GPIO_SetBits(GPIOA,GPIO_Pin_0);
-    }else{
+	/* 临时保持常亮，忽略翻转请求。 */
 	GPIO_ResetBits(GPIOA,GPIO_Pin_0);
-    }
 }
 
 

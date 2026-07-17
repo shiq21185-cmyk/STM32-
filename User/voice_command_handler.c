@@ -19,9 +19,9 @@ extern volatile uint8_t display_mode;
 
 // 全局变量
 volatile uint8_t g_voice_alarm_edit = 0;          // 0=未在修改, 1=等待输入闹钟序号, 2=等待输入小时, 3=等待输入分钟
-volatile uint8_t g_voice_alarm_index = 0;         // 选中的闹钟序号 (1-3)
-volatile uint8_t g_voice_alarm_hour = 0;          // 输入的小时
-volatile uint8_t g_voice_alarm_minute = 0;        // 输入的分钟
+volatile uint8_t g_voice_alarm_index = 0;         // 选中的闹钟序�?(1-3)
+volatile uint8_t g_voice_alarm_hour = 0;          // 输入的小�?
+volatile uint8_t g_voice_alarm_minute = 0;        // 输入的分�?
 
 // 刷新闹钟界面OLED显示
 void RefreshAlarmDisplay(void)
@@ -47,13 +47,12 @@ void RefreshAlarmDisplay(void)
 // 更新闹钟时间并刷新OLED显示
 void UpdateAlarmTime(uint8_t index, uint8_t hour, uint8_t minute)
 {
-    // 验证闹钟序号、小时(0-23)和分钟(0-59)的有效性
+    // 验证闹钟序号、小�?0-23)和分�?0-59)的有效�?
     if(index >= 1 && index <= 3 && hour <= 23 && minute <= 59)
     {
         // 更新闹钟时间
-        uint8_t alarm_index = index - 1; // 转换为0-2的索引
-        g_bt_alarms[alarm_index].hour = hour;
-        g_bt_alarms[alarm_index].minute = minute;
+        uint8_t alarm_index = index - 1; // 转换�?-2的索�?
+        HC06_SetAlarm(alarm_index, hour, minute, g_bt_alarms[alarm_index].enabled);
         
         // 刷新OLED显示
         RefreshAlarmDisplay();
@@ -71,37 +70,37 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
     {
         switch(cmd_id)
         {
-            case 0x00: // 欢迎语
+            case 0x00: // 欢迎�?
                 break;
-            case 0x01: // 休息语
+            case 0x01: // 休息�?
                 break;
-            case 0x02: // 唤醒词
+            case 0x02: // 唤醒�?
                 break;
             case 0x03: // 增大音量
                 if(g_volume < 6) {
                     g_volume++;
-                    XRVoice_SetVolume(g_volume); // 同步到语音模块
+                    XRVoice_SetVolume(g_volume); // 同步到语音模�?
                 }
                 break;
             case 0x04: // 减小音量
                 if(g_volume > 1) {
                     g_volume--;
-                    XRVoice_SetVolume(g_volume); // 同步到语音模块
+                    XRVoice_SetVolume(g_volume); // 同步到语音模�?
                 }
                 break;
-            case 0x05: // 最大音量
+            case 0x05: // 最大音�?
                 g_volume = 6;
-                XRVoice_SetVolume(g_volume); // 同步到语音模块
+                XRVoice_SetVolume(g_volume); // 同步到语音模�?
                 break;
             case 0x06: // 中等音量
                 g_volume = 3;
-                XRVoice_SetVolume(g_volume); // 同步到语音模块
+                XRVoice_SetVolume(g_volume); // 同步到语音模�?
                 break;
-            case 0x07: // 最小音量
+            case 0x07: // 最小音�?
                 g_volume = 1;
-                XRVoice_SetVolume(g_volume); // 同步到语音模块
+                XRVoice_SetVolume(g_volume); // 同步到语音模�?
                 break;
-            case 0x08: // 开启播报
+            case 0x08: // 开启播�?
                 break;
             case 0x09: // 关闭播报
                 break;
@@ -114,19 +113,19 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
     {
         switch(cmd_id)
         {
-            case 0x00: // 现在是什么时候
+            case 0x00: // 现在是什么时�?
                 Voice_Play_Current_Time_With_Period();
                 break;
         }
         return;
     }
     
-    // 处理Type=10命令（点）
+    // 处理Type=10命令（点�?
     if(cmd_type == 0x10)
     {
         switch(cmd_id)
         {
-            case 0x00: // 点
+            case 0x00: // �?
                 // 这里可以添加点的处理逻辑
                 break;
         }
@@ -138,7 +137,7 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
     {
         switch(cmd_id)
         {
-            case 0x00: // 联系监护人
+            case 0x00: // 联系监护�?
                 break;
             case 0x01: // 停下
                 break;
@@ -148,7 +147,7 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
             case 0x03: // 关闭盖子
                 Servo_Close();
                 
-                // 停止闹钟状态
+                // 停止闹钟状�?
                 if(g_alarm_ringing)
                 {
                     g_alarm_ringing = 0;
@@ -169,34 +168,34 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                 break;
             case 0x04: // 修改闹钟
                 g_voice_alarm_edit = 1;
-                display_mode = 2; // 切换到闹钟设置界面
+                display_mode = 2; // 切换到闹钟设置界�?
                 // 不主动播放语音，等待用户输入
                 break;
             case 0x05: // 闹钟一
                 if(g_voice_alarm_edit == 1)
                 {
                     g_voice_alarm_index = 1;
-                    g_voice_alarm_edit = 2; // 进入等待小时输入状态
-                    XRVoice_PlayRaw(0x02, 0x05); // 播报"请时钟分钟分开说数字"
+                    g_voice_alarm_edit = 2; // 进入等待小时输入状�?
+                    XRVoice_PlayRaw(0x02, 0x05); // 播报"请时钟分钟分开说数�?
                 }
                 break;
-            case 0x06: // 闹钟二
+            case 0x06: // 闹钟�?
                 if(g_voice_alarm_edit == 1)
                 {
                     g_voice_alarm_index = 2;
-                    g_voice_alarm_edit = 2; // 进入等待小时输入状态
-                    XRVoice_PlayRaw(0x02, 0x06); // 播报"请时钟分钟分开说数字"
+                    g_voice_alarm_edit = 2; // 进入等待小时输入状�?
+                    XRVoice_PlayRaw(0x02, 0x06); // 播报"请时钟分钟分开说数�?
                 }
                 break;
-            case 0x07: // 闹钟三
+            case 0x07: // 闹钟�?
                 if(g_voice_alarm_edit == 1)
                 {
                     g_voice_alarm_index = 3;
-                    g_voice_alarm_edit = 2; // 进入等待小时输入状态
-                    XRVoice_PlayRaw(0x02, 0x07); // 播报"请时钟分钟分开说数字"
+                    g_voice_alarm_edit = 2; // 进入等待小时输入状�?
+                    XRVoice_PlayRaw(0x02, 0x07); // 播报"请时钟分钟分开说数�?
                 }
                 break;
-            case 0x08: // 零
+            case 0x08: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 0;
@@ -207,14 +206,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x02, 0x08); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 0;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x02, 0x08); // 播报"录入成功"
                 }
                 break;
@@ -229,18 +228,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x02, 0x09); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 1;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x02, 0x09); // 播报"录入成功"
                 }
                 break;
-            case 0x0A: // 二
+            case 0x0A: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 2;
@@ -251,18 +250,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x02, 0x0A); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 2;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x02, 0x0A); // 播报"录入成功"
                 }
                 break;
-            case 0x0B: // 三
+            case 0x0B: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 3;
@@ -273,18 +272,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x02, 0x0B); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 3;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x02, 0x0B); // 播报"录入成功"
                 }
                 break;
-            case 0x0C: // 四
+            case 0x0C: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 4;
@@ -295,14 +294,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x02, 0x0C); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 4;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x02, 0x0C); // 播报"录入成功"
                 }
                 break;
@@ -315,7 +314,7 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
     {
         switch(cmd_id)
         {
-            case 0x00: // 五
+            case 0x00: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 5;
@@ -326,18 +325,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x00); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 5;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x00); // 播报"录入成功"
                 }
                 break;
-            case 0x01: // 六
+            case 0x01: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 6;
@@ -348,18 +347,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x01); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 6;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x01); // 播报"录入成功"
                 }
                 break;
-            case 0x02: // 七
+            case 0x02: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 7;
@@ -370,18 +369,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x02); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 7;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x02); // 播报"录入成功"
                 }
                 break;
-            case 0x03: // 八
+            case 0x03: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 8;
@@ -392,18 +391,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x03); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 8;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x03); // 播报"录入成功"
                 }
                 break;
-            case 0x04: // 九
+            case 0x04: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 9;
@@ -414,18 +413,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x04); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 9;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x04); // 播报"录入成功"
                 }
                 break;
-            case 0x05: // 十
+            case 0x05: // �?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 10;
@@ -436,14 +435,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x05); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 10;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x05); // 播报"录入成功"
                 }
                 break;
@@ -458,14 +457,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x06); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 11;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x06); // 播报"录入成功"
                 }
                 break;
@@ -480,14 +479,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x07); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 12;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x07); // 播报"录入成功"
                 }
                 break;
@@ -502,14 +501,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x08); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 13;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x08); // 播报"录入成功"
                 }
                 break;
@@ -524,14 +523,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x09); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 14;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x09); // 播报"录入成功"
                 }
                 break;
@@ -546,14 +545,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x0A); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 15;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x0A); // 播报"录入成功"
                 }
                 break;
@@ -568,14 +567,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x0B); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 16;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x0B); // 播报"录入成功"
                 }
                 break;
@@ -590,14 +589,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x03, 0x0C); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 17;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x03, 0x0C); // 播报"录入成功"
                 }
                 break;
@@ -608,9 +607,9 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
     // 处理Type=04命令
     if(cmd_type == 0x04)
     {
-        // 小时输入验证：0-23
+        // 小时输入验证�?-23
         if(g_voice_alarm_edit == 2 && cmd_id >= 0x06) {
-            // 小时输入错误，超出范围
+            // 小时输入错误，超出范�?
             XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
             return;
         }
@@ -628,14 +627,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x04, 0x00); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 18;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x00); // 播报"录入成功"
                 }
                 break;
@@ -650,14 +649,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x04, 0x01); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 19;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x01); // 播报"录入成功"
                 }
                 break;
@@ -672,14 +671,14 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x04, 0x02); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 20;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x02); // 播报"录入成功"
                 }
                 break;
@@ -694,18 +693,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x04, 0x03); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 21;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x03); // 播报"录入成功"
                 }
                 break;
-            case 0x04: // 二十二
+            case 0x04: // 二十�?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 22;
@@ -716,18 +715,18 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x04, 0x04); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 22;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x04); // 播报"录入成功"
                 }
                 break;
-            case 0x05: // 二十三
+            case 0x05: // 二十�?
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 23;
@@ -738,89 +737,89 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                         // 刷新OLED显示
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状态
+                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
                     XRVoice_PlayRaw(0x04, 0x05); // 播报"录入成功"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 23;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x05); // 播报"录入成功"
                 }
                 break;
-            case 0x06: // 二十四
+            case 0x06: // 二十�?
                 if(g_voice_alarm_edit == 2)
                 {
-                    // 小时输入错误，超出范围
+                    // 小时输入错误，超出范�?
                     XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 24;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x06); // 播报"录入成功"
                 }
                 break;
             // 其他分钟数字处理...
-            case 0x07: // 二十五
+            case 0x07: // 二十�?
                 if(g_voice_alarm_edit == 2)
                 {
-                    // 小时输入错误，超出范围
+                    // 小时输入错误，超出范�?
                     XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 25;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x07); // 播报"录入成功"
                 }
                 break;
-            case 0x08: // 二十六
+            case 0x08: // 二十�?
                 if(g_voice_alarm_edit == 2)
                 {
-                    // 小时输入错误，超出范围
+                    // 小时输入错误，超出范�?
                     XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 26;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x08); // 播报"录入成功"
                 }
                 break;
-            case 0x09: // 二十七
+            case 0x09: // 二十�?
                 if(g_voice_alarm_edit == 2)
                 {
-                    // 小时输入错误，超出范围
+                    // 小时输入错误，超出范�?
                     XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 27;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x09); // 播报"录入成功"
                 }
                 break;
-            case 0x10: // 二十八
+            case 0x10: // 二十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 28;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x10); // 播报"录入成功"
                 }
                 break;
-            case 0x11: // 二十九
+            case 0x11: // 二十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 29;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x11); // 播报"录入成功"
                 }
                 break;
@@ -829,7 +828,7 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                 {
                     g_voice_alarm_minute = 30;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x12); // 播报"录入成功"
                 }
                 break;
@@ -838,79 +837,79 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                 {
                     g_voice_alarm_minute = 31;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x13); // 播报"录入成功"
                 }
                 break;
-            case 0x14: // 三十二
+            case 0x14: // 三十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 32;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x14); // 播报"录入成功"
                 }
                 break;
-            case 0x15: // 三十三
+            case 0x15: // 三十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 33;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x15); // 播报"录入成功"
                 }
                 break;
-            case 0x16: // 三十四
+            case 0x16: // 三十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 34;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x16); // 播报"录入成功"
                 }
                 break;
-            case 0x17: // 三十五
+            case 0x17: // 三十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 35;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x17); // 播报"录入成功"
                 }
                 break;
-            case 0x18: // 三十六
+            case 0x18: // 三十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 36;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x18); // 播报"录入成功"
                 }
                 break;
-            case 0x19: // 三十七
+            case 0x19: // 三十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 37;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x19); // 播报"录入成功"
                 }
                 break;
-            case 0x20: // 三十八
+            case 0x20: // 三十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 38;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x20); // 播报"录入成功"
                 }
                 break;
-            case 0x21: // 三十九
+            case 0x21: // 三十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 39;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x21); // 播报"录入成功"
                 }
                 break;
@@ -919,7 +918,7 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                 {
                     g_voice_alarm_minute = 40;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x22); // 播报"录入成功"
                 }
                 break;
@@ -928,79 +927,79 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                 {
                     g_voice_alarm_minute = 41;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x23); // 播报"录入成功"
                 }
                 break;
-            case 0x24: // 四十二
+            case 0x24: // 四十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 42;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x24); // 播报"录入成功"
                 }
                 break;
-            case 0x25: // 四十三
+            case 0x25: // 四十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 43;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x25); // 播报"录入成功"
                 }
                 break;
-            case 0x26: // 四十四
+            case 0x26: // 四十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 44;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x26); // 播报"录入成功"
                 }
                 break;
-            case 0x27: // 四十五
+            case 0x27: // 四十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 45;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x27); // 播报"录入成功"
                 }
                 break;
-            case 0x28: // 四十六
+            case 0x28: // 四十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 46;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x28); // 播报"录入成功"
                 }
                 break;
-            case 0x29: // 四十七
+            case 0x29: // 四十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 47;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x29); // 播报"录入成功"
                 }
                 break;
-            case 0x30: // 四十八
+            case 0x30: // 四十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 48;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x30); // 播报"录入成功"
                 }
                 break;
-            case 0x31: // 四十九
+            case 0x31: // 四十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 49;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x31); // 播报"录入成功"
                 }
                 break;
@@ -1009,7 +1008,7 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                 {
                     g_voice_alarm_minute = 50;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x32); // 播报"录入成功"
                 }
                 break;
@@ -1018,86 +1017,86 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                 {
                     g_voice_alarm_minute = 51;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x33); // 播报"录入成功"
                 }
                 break;
-            case 0x34: // 五十二
+            case 0x34: // 五十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 52;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x34); // 播报"录入成功"
                 }
                 break;
-            case 0x35: // 五十三
+            case 0x35: // 五十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 53;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x35); // 播报"录入成功"
                 }
                 break;
-            case 0x36: // 五十四
+            case 0x36: // 五十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 54;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x36); // 播报"录入成功"
                 }
                 break;
-            case 0x37: // 五十五
+            case 0x37: // 五十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 55;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x37); // 播报"录入成功"
                 }
                 break;
-            case 0x38: // 五十六
+            case 0x38: // 五十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 56;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x38); // 播报"录入成功"
                 }
                 break;
-            case 0x39: // 五十七
+            case 0x39: // 五十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 57;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x39); // 播报"录入成功"
                 }
                 break;
-            case 0x40: // 五十八
+            case 0x40: // 五十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 58;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x40); // 播报"录入成功"
                 }
                 break;
-            case 0x41: // 五十九
+            case 0x41: // 五十�?
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 59;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模式
+                    g_voice_alarm_edit = 0; // 退出修改模�?
                     XRVoice_PlayRaw(0x04, 0x41); // 播报"录入成功"
                 }
                 break;
             case 0x42: // 六十
                 if(g_voice_alarm_edit == 3)
                 {
-                    // 分钟输入错误，超出范围
+                    // 分钟输入错误，超出范�?
                     XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
                 }
                 break;
@@ -1121,7 +1120,7 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
     {
         switch(cmd_id)
         {
-            case 0x00: // 现在是什么时候
+            case 0x00: // 现在是什么时�?
             {
                 uint8_t hour = current_hour;
                 uint8_t play_cmd_type = 0x08;
@@ -1157,17 +1156,17 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
             }
             case 0x01: // 欢迎
                 break;
-            case 0x03: // 现在是凌晨
+            case 0x03: // 现在是凌�?
                 break;
-            case 0x04: // 现在是早上
+            case 0x04: // 现在是早�?
                 break;
-            case 0x05: // 现在是中午
+            case 0x05: // 现在是中�?
                 break;
-            case 0x06: // 现在是下午
+            case 0x06: // 现在是下�?
                 break;
-            case 0x07: // 现在是傍晚
+            case 0x07: // 现在是傍�?
                 break;
-            case 0x08: // 现在是晚上
+            case 0x08: // 现在是晚�?
                 break;
         }
         return;
@@ -1182,9 +1181,9 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                 break;
             case 0x01: // 闹钟一
                 break;
-            case 0x02: // 闹钟二
+            case 0x02: // 闹钟�?
                 break;
-            case 0x03: // 闹钟三
+            case 0x03: // 闹钟�?
                 break;
         }
         return;
