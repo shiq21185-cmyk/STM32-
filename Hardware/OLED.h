@@ -5,7 +5,7 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
-// OLED»¥³âËø¾ä±ú£¨Íâ²¿ÉùÃ÷£©
+// OLED
 extern SemaphoreHandle_t xOLEDMutex;
 
 void OLED_Init(void);
@@ -18,10 +18,10 @@ void OLED_ShowHexNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Leng
 void OLED_ShowBinNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length);
 //Chinese
 void OLED_ShowChinese(uint8_t Line, uint8_t Column, uint8_t Index);
-//³¤¶È±ä³¤
+//ï¿½ï¿½ï¿½È±ä³¤
 void OLED_ShowBigNum(uint8_t Line, uint8_t Column, uint8_t Number);
 void OLED_ShowBigChar(uint8_t Line, uint8_t Column, char Char);
-//¸ß¶È±ä¿í
+//ï¿½ß¶È±ï¿½ï¿½
 void OLED_ShowTallNum(uint8_t Line, uint8_t Column, uint8_t Number);
 void OLED_ShowTallChar(uint8_t Line, uint8_t Column, char Char);
 

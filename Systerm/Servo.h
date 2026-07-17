@@ -5,6 +5,6 @@
 
 void Servo_Init(void);
 void Servo_SetAngle(float Angle);
-void Servo_SetPulse(uint16_t pulse);			//Ö±½ÓÉèÖÃÂö¿í
+void Servo_SetPulse(uint16_t pulse);			//Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 #endif

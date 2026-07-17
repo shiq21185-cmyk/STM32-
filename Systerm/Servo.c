@@ -22,7 +22,7 @@ void Servo_SetAngle(float Angle)
 	// 限制角度范围
 	if(Angle < 0) Angle = 0;
 	if(Angle > 180) Angle = 180;
-	
+
 	// 角度转脉宽：0度=0.5ms(500), 180度=2.5ms(2500)
 	uint16_t pulse = (uint16_t)(Angle / 180.0f * 2000.0f + 500.0f);
 	PWM_SetCompare2(pulse);						//使用通道2

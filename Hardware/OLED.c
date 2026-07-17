@@ -13,7 +13,7 @@ SemaphoreHandle_t xOLEDMutex = NULL;
 void OLED_I2C_Init(void)
 {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-	
+
 	GPIO_InitTypeDef GPIO_InitStructure;
  	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -21,7 +21,7 @@ void OLED_I2C_Init(void)
  	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
  	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	
+
 	OLED_W_SCL(1);
 	OLED_W_SDA(1);
 }
@@ -79,7 +79,7 @@ void OLED_WriteCommand(uint8_t Command)
 	OLED_I2C_Start();
 	OLED_I2C_SendByte(0x78);		//从机地址
 	OLED_I2C_SendByte(0x00);		//写命令
-	OLED_I2C_SendByte(Command); 
+	OLED_I2C_SendByte(Command);
 	OLED_I2C_Stop();
 }
 
@@ -106,8 +106,8 @@ void OLED_WriteData(uint8_t Data)
 void OLED_SetCursor(uint8_t Y, uint8_t X)
 {
 	OLED_WriteCommand(0xB0 | Y);					//设置Y位置
-	OLED_WriteCommand(0x10 | ((X & 0xF0) >> 4));	//设置X位置高4位
-	OLED_WriteCommand(0x00 | (X & 0x0F));			//设置X位置低4位
+	OLED_WriteCommand(0x10 | (((X + 2) & 0xF0) >> 4));	//设置X位置高4位，+2是SH1106偏移
+	OLED_WriteCommand(0x00 | ((X + 2) & 0x0F));			//设置X位置低4位，+2是SH1106偏移
 }
 
 /**
@@ -116,14 +116,14 @@ void OLED_SetCursor(uint8_t Y, uint8_t X)
   * @retval 无
   */
 void OLED_Clear(void)
-{  
+{
 	uint8_t i, j;
-	
+
 	// 获取互斥锁，保护整个清屏操作
 	if(xOLEDMutex != NULL) {
 		xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
 	}
-	
+
 	for (j = 0; j < 8; j++)
 	{
 		OLED_SetCursor(j, 0);
@@ -132,7 +132,7 @@ void OLED_Clear(void)
 			OLED_WriteData(0x00);
 		}
 	}
-	
+
 	// 释放互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreGive(xOLEDMutex);
@@ -147,14 +147,14 @@ void OLED_Clear(void)
   * @retval 无
   */
 void OLED_ShowChar(uint8_t Line, uint8_t Column, char Char)
-{      	
+{
 	uint8_t i;
-	
+
 	// 获取互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
 	}
-	
+
 	OLED_SetCursor((Line - 1) * 2, (Column - 1) * 8);		//设置光标位置在上半部分
 	for (i = 0; i < 8; i++)
 	{
@@ -165,7 +165,7 @@ void OLED_ShowChar(uint8_t Line, uint8_t Column, char Char)
 	{
 		OLED_WriteData(OLED_F8x16[Char - ' '][i + 8]);		//显示下半部分内容
 	}
-	
+
 	// 释放互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreGive(xOLEDMutex);
@@ -182,17 +182,17 @@ void OLED_ShowChar(uint8_t Line, uint8_t Column, char Char)
 void OLED_ShowString(uint8_t Line, uint8_t Column, char *String)
 {
 	uint8_t i;
-	
+
 	// 获取互斥锁（保护整个字符串显示）
 	if(xOLEDMutex != NULL) {
 		xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
 	}
-	
+
 	for (i = 0; String[i] != '\0'; i++)
 	{
 		uint8_t j;
 		char Char = String[i];
-		
+
 		OLED_SetCursor((Line - 1) * 2, (Column + i - 1) * 8);
 		for (j = 0; j < 8; j++)
 		{
@@ -204,7 +204,7 @@ void OLED_ShowString(uint8_t Line, uint8_t Column, char *String)
 			OLED_WriteData(OLED_F8x16[Char - ' '][j + 8]);
 		}
 	}
-	
+
 	// 释放互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreGive(xOLEDMutex);
@@ -236,17 +236,17 @@ uint32_t OLED_Pow(uint32_t X, uint32_t Y)
 void OLED_ShowNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)
 {
 	uint8_t i;
-	
+
 	// 获取互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
 	}
-	
-	for (i = 0; i < Length; i++)							
+
+	for (i = 0; i < Length; i++)
 	{
 		uint8_t j;
 		char Char = Number / OLED_Pow(10, Length - i - 1) % 10 + '0';
-		
+
 		OLED_SetCursor((Line - 1) * 2, (Column + i - 1) * 8);
 		for (j = 0; j < 8; j++)
 		{
@@ -258,7 +258,7 @@ void OLED_ShowNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)
 			OLED_WriteData(OLED_F8x16[Char - ' '][j + 8]);
 		}
 	}
-	
+
 	// 释放互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreGive(xOLEDMutex);
@@ -277,12 +277,12 @@ void OLED_ShowSignedNum(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Le
 {
 	uint8_t i;
 	uint32_t Number1;
-	
+
 	// 获取互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
 	}
-	
+
 	if (Number >= 0)
 	{
 		OLED_SetCursor((Line - 1) * 2, (Column - 1) * 8);
@@ -327,11 +327,11 @@ void OLED_ShowSignedNum(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Le
 		OLED_WriteData(OLED_F8x16['-' - ' '][15]);
 		Number1 = -Number;
 	}
-	for (i = 0; i < Length; i++)							
+	for (i = 0; i < Length; i++)
 	{
 		uint8_t j;
 		char Char = Number1 / OLED_Pow(10, Length - i - 1) % 10 + '0';
-		
+
 		OLED_SetCursor((Line - 1) * 2, (Column + i) * 8);
 		for (j = 0; j < 8; j++)
 		{
@@ -343,7 +343,7 @@ void OLED_ShowSignedNum(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Le
 			OLED_WriteData(OLED_F8x16[Char - ' '][j + 8]);
 		}
 	}
-	
+
 	// 释放互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreGive(xOLEDMutex);
@@ -361,13 +361,13 @@ void OLED_ShowSignedNum(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Le
 void OLED_ShowHexNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)
 {
 	uint8_t i, SingleNumber;
-	
+
 	// 获取互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
 	}
-	
-	for (i = 0; i < Length; i++)							
+
+	for (i = 0; i < Length; i++)
 	{
 		uint8_t j;
 		SingleNumber = Number / OLED_Pow(16, Length - i - 1) % 16;
@@ -380,7 +380,7 @@ void OLED_ShowHexNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Leng
 		{
 			Char = SingleNumber - 10 + 'A';
 		}
-		
+
 		OLED_SetCursor((Line - 1) * 2, (Column + i - 1) * 8);
 		for (j = 0; j < 8; j++)
 		{
@@ -392,7 +392,7 @@ void OLED_ShowHexNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Leng
 			OLED_WriteData(OLED_F8x16[Char - ' '][j + 8]);
 		}
 	}
-	
+
 	// 释放互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreGive(xOLEDMutex);
@@ -410,17 +410,17 @@ void OLED_ShowHexNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Leng
 void OLED_ShowBinNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)
 {
 	uint8_t i;
-	
+
 	// 获取互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
 	}
-	
-	for (i = 0; i < Length; i++)							
+
+	for (i = 0; i < Length; i++)
 	{
 		uint8_t j;
 		char Char = Number / OLED_Pow(2, Length - i - 1) % 2 + '0';
-		
+
 		OLED_SetCursor((Line - 1) * 2, (Column + i - 1) * 8);
 		for (j = 0; j < 8; j++)
 		{
@@ -432,7 +432,7 @@ void OLED_ShowBinNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Leng
 			OLED_WriteData(OLED_F8x16[Char - ' '][j + 8]);
 		}
 	}
-	
+
 	// 释放互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreGive(xOLEDMutex);
@@ -447,34 +447,34 @@ void OLED_ShowBinNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Leng
 void OLED_Init(void)
 {
 	uint32_t i, j;
-	
+
 	for (i = 0; i < 1000; i++)			//上电延时
 	{
 		for (j = 0; j < 1000; j++);
 	}
-	
+
 	OLED_I2C_Init();			//端口初始化
-	
+
 	OLED_WriteCommand(0xAE);	//关闭显示
-	
+
 	OLED_WriteCommand(0xD5);	//设置显示时钟分频比/振荡器频率
 	OLED_WriteCommand(0x80);
-	
+
 	OLED_WriteCommand(0xA8);	//设置多路复用率
 	OLED_WriteCommand(0x3F);
-	
+
 	OLED_WriteCommand(0xD3);	//设置显示偏移
 	OLED_WriteCommand(0x00);
-	
+
 	OLED_WriteCommand(0x40);	//设置显示开始行
-	
+
 	OLED_WriteCommand(0xA1);	//设置左右方向，0xA1正常 0xA0左右反置
-	
+
 	OLED_WriteCommand(0xC8);	//设置上下方向，0xC8正常 0xC0上下反置
 
-	OLED_WriteCommand(0xDA);	//设置COM引脚硬件配置
+	OLED_WriteCommand(0xDA);	//设置COM引脚硬件配置（SH1106用0x12）
 	OLED_WriteCommand(0x12);
-	
+
 	OLED_WriteCommand(0x81);	//设置对比度控制
 	OLED_WriteCommand(0xCF);
 
@@ -492,20 +492,20 @@ void OLED_Init(void)
 	OLED_WriteCommand(0x14);
 
 	OLED_WriteCommand(0xAF);	//开启显示
-		
+
 	OLED_Clear();				//OLED清屏
 }
 
 //Chinese
 void OLED_ShowChinese(uint8_t Line, uint8_t Column, uint8_t Index)
-{      	
+{
 	uint8_t i;
-	
+
 	// 获取互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
 	}
-	
+
 	OLED_SetCursor((Line - 1) * 2, (Column - 1) * 8);		//设置光标位置在上半部分
 	for (i = 0; i < 16; i++)
 	{
@@ -516,7 +516,7 @@ void OLED_ShowChinese(uint8_t Line, uint8_t Column, uint8_t Index)
 	{
 		OLED_WriteData(OLED_F16x16[Index][i + 16]);		//显示下半部分内容
 	}
-	
+
 	// 释放互斥锁
 	if(xOLEDMutex != NULL) {
 		xSemaphoreGive(xOLEDMutex);
@@ -534,12 +534,12 @@ void OLED_ShowBigNum(uint8_t Line, uint8_t Column, uint8_t Number)
 {
     uint8_t i;
     const uint8_t *pFont = OLED_F8x16[Number + 16]; // 数字0-9在字模库中从16开始
-    
+
     // 获取互斥锁
     if(xOLEDMutex != NULL) {
         xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
     }
-    
+
     // 上半部分（第Line行）- 每个像素列显示两次，实现双倍宽度
     OLED_SetCursor((Line - 1) * 2, (Column - 1) * 8);
     for (i = 0; i < 8; i++)
@@ -549,7 +549,7 @@ void OLED_ShowBigNum(uint8_t Line, uint8_t Column, uint8_t Number)
         OLED_WriteData(data);  // 原始列
         OLED_WriteData(data);  // 重复列，实现双倍宽度
     }
-    
+
     // 下半部分（第Line+1行）
     OLED_SetCursor((Line - 1) * 2 + 1, (Column - 1) * 8);
     for (i = 0; i < 8; i++)
@@ -558,7 +558,7 @@ void OLED_ShowBigNum(uint8_t Line, uint8_t Column, uint8_t Number)
         OLED_WriteData(data);  // 原始列
         OLED_WriteData(data);  // 重复列
     }
-    
+
     // 释放互斥锁
     if(xOLEDMutex != NULL) {
         xSemaphoreGive(xOLEDMutex);
@@ -576,11 +576,11 @@ void OLED_ShowBigChar(uint8_t Line, uint8_t Column, char Char)
 {
     uint8_t i;
     const uint8_t *pFont = OLED_F8x16[Char - ' '];
-    
+
     if(xOLEDMutex != NULL) {
         xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
     }
-    
+
     // 上半部分
     OLED_SetCursor((Line - 1) * 2, (Column - 1) * 8);
     for (i = 0; i < 8; i++)
@@ -589,7 +589,7 @@ void OLED_ShowBigChar(uint8_t Line, uint8_t Column, char Char)
         OLED_WriteData(data);
         OLED_WriteData(data);
     }
-    
+
     // 下半部分
     OLED_SetCursor((Line - 1) * 2 + 1, (Column - 1) * 8);
     for (i = 0; i < 8; i++)
@@ -598,7 +598,7 @@ void OLED_ShowBigChar(uint8_t Line, uint8_t Column, char Char)
         OLED_WriteData(data);
         OLED_WriteData(data);
     }
-    
+
     if(xOLEDMutex != NULL) {
         xSemaphoreGive(xOLEDMutex);
     }
@@ -615,25 +615,25 @@ void OLED_ShowTallNum(uint8_t Line, uint8_t Column, uint8_t Number)
 {
     uint8_t i;
     const uint8_t *pFont = OLED_F8x16[Number + 16]; // 数字0-9从索引16开始
-    
+
     if(xOLEDMutex != NULL) {
         xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
     }
-    
+
     // 第1行（上半部分）：显示字模的上半部分（8行像素）
     OLED_SetCursor((Line - 1) * 2, (Column - 1) * 8);
     for (i = 0; i < 8; i++)
     {
         OLED_WriteData(pFont[i]);
     }
-    
+
     // 第2行（下半部分）：显示字模的下半部分（8行像素）
     OLED_SetCursor((Line - 1) * 2 + 1, (Column - 1) * 8);
     for (i = 0; i < 8; i++)
     {
         OLED_WriteData(pFont[i + 8]);
     }
-    
+
     if(xOLEDMutex != NULL) {
         xSemaphoreGive(xOLEDMutex);
     }
@@ -646,25 +646,25 @@ void OLED_ShowTallChar(uint8_t Line, uint8_t Column, char Char)
 {
     uint8_t i;
     const uint8_t *pFont = OLED_F8x16[Char - ' '];
-    
+
     if(xOLEDMutex != NULL) {
         xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
     }
-    
+
     // 上半部分
     OLED_SetCursor((Line - 1) * 2, (Column - 1) * 8);
     for (i = 0; i < 8; i++)
     {
         OLED_WriteData(pFont[i]);
     }
-    
+
     // 下半部分
     OLED_SetCursor((Line - 1) * 2 + 1, (Column - 1) * 8);
     for (i = 0; i < 8; i++)
     {
         OLED_WriteData(pFont[i + 8]);
     }
-    
+
     if(xOLEDMutex != NULL) {
         xSemaphoreGive(xOLEDMutex);
     }
@@ -681,21 +681,21 @@ void OLED_Show16x32Char(uint8_t Line, uint8_t Column, char Char)
     uint8_t i;
     uint8_t idx;
     uint8_t page;
-    
+
     // 转换索引
     if(Char >= '0' && Char <= '9') idx = Char - '0';
     else if(Char == ':') idx = 10;
     else return;
-    
+
     if(Column > 15) return;
     if(Line < 1 || Line > 3) return;  // 只能从第1-3字符行开始
-    
+
     if(xOLEDMutex != NULL) xSemaphoreTake(xOLEDMutex, portMAX_DELAY);
-    
+
     // 16×32 = 4个Page（每Page 8行像素）
     // Line=2 对应 Page 2,3,4,5（第16-47像素行）
     uint8_t startPage = (Line - 1) * 2;  // 字符行2 → Page 2
-    
+
     for(page = 0; page < 4; page++) {
         OLED_SetCursor(startPage + page, (Column - 1) * 8);
         // 每个Page写16字节（2列 × 8行）
@@ -703,6 +703,6 @@ void OLED_Show16x32Char(uint8_t Line, uint8_t Column, char Char)
             OLED_WriteData(OLED_F16x32[idx][page * 16 + i]);
         }
     }
-    
+
     if(xOLEDMutex != NULL) xSemaphoreGive(xOLEDMutex);
 }

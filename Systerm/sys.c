@@ -2,21 +2,21 @@
 
 void WFI_SET(void)
 {
-	__ASM volatile("wfi");		  
+	__ASM volatile("wfi");
 }
-//¹Ø±ÕËùÓÐÖÐ¶Ï
+//ï¿½Ø±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
 void INTX_DISABLE(void)
-{		  
+{
 	__ASM volatile("cpsid i");
 }
-//¿ªÆôËùÓÐÖÐ¶Ï
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
 void INTX_ENABLE(void)
 {
-	__ASM volatile("cpsie i");		  
+	__ASM volatile("cpsie i");
 }
-//ÉèÖÃÕ»¶¥µØÖ·
-//addr:Õ»¶¥µØÖ·
-__asm void MSR_MSP(u32 addr) 
+//ï¿½ï¿½ï¿½ï¿½Õ»ï¿½ï¿½ï¿½ï¿½Ö·
+//addr:Õ»ï¿½ï¿½ï¿½ï¿½Ö·
+__asm void MSR_MSP(u32 addr)
 {
     MSR MSP, r0 			//set Main Stack value
     BX r14

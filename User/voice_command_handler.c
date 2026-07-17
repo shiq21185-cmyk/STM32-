@@ -5,11 +5,11 @@
 #include "Servo.h"
 #include "LED.h"
 
-// 外部函数声明
+
 extern void Voice_Play_Current_Time(void);
 extern void Voice_Play_Current_Time_With_Period(void);
 
-// 从app_tasks.c引入的全局变量
+
 extern volatile uint8_t g_alarm_ringing;
 extern volatile uint8_t g_light_changed;
 extern volatile uint8_t g_empty_box_alarm_active;
@@ -17,18 +17,19 @@ extern volatile uint8_t g_stop_empty_box_alarm;
 extern volatile uint8_t g_volume;
 extern volatile uint8_t display_mode;
 
-// 全局变量
-volatile uint8_t g_voice_alarm_edit = 0;          // 0=未在修改, 1=等待输入闹钟序号, 2=等待输入小时, 3=等待输入分钟
-volatile uint8_t g_voice_alarm_index = 0;         // 选中的闹钟序�?(1-3)
-volatile uint8_t g_voice_alarm_hour = 0;          // 输入的小�?
-volatile uint8_t g_voice_alarm_minute = 0;        // 输入的分�?
 
-// 刷新闹钟界面OLED显示
+volatile uint8_t g_voice_alarm_edit = 0;
+volatile uint8_t g_voice_alarm_index = 0;
+volatile uint8_t g_voice_alarm_hour = 0;
+volatile uint8_t g_voice_alarm_minute = 0;
+
+
+/* 在 OLED 上显示三组闹钟。 */
 void RefreshAlarmDisplay(void)
 {
-    // 刷新OLED显示
+
     OLED_Clear();
-    // 显示闹钟界面
+
     OLED_ShowString(1, 1, "  Alarm Clocks  ");
     OLED_ShowString(2, 1, "1:");
     OLED_ShowNum(2, 3, g_bt_alarms[0].hour, 2);
@@ -44,1088 +45,1090 @@ void RefreshAlarmDisplay(void)
     OLED_ShowNum(4, 6, g_bt_alarms[2].minute, 2);
 }
 
-// 更新闹钟时间并刷新OLED显示
+
+/* 校验并更新指定闹钟的时间。 */
 void UpdateAlarmTime(uint8_t index, uint8_t hour, uint8_t minute)
 {
-    // 验证闹钟序号、小�?0-23)和分�?0-59)的有效�?
+
     if(index >= 1 && index <= 3 && hour <= 23 && minute <= 59)
     {
-        // 更新闹钟时间
-        uint8_t alarm_index = index - 1; // 转换�?-2的索�?
+
+        uint8_t alarm_index = index - 1;
         HC06_SetAlarm(alarm_index, hour, minute, g_bt_alarms[alarm_index].enabled);
-        
-        // 刷新OLED显示
+
+
         RefreshAlarmDisplay();
-        
-        // 播报修改完成
+
+
         XRVoice_PlayRaw(0x10, 0x05);
     }
 }
 
-// 处理语音命令
+
+/* 根据语音命令类型和编号执行对应操作。 */
 void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
 {
-    // 处理Type=01命令
+
     if(cmd_type == 0x01)
     {
         switch(cmd_id)
         {
-            case 0x00: // 欢迎�?
+            case 0x00:
                 break;
-            case 0x01: // 休息�?
+            case 0x01:
                 break;
-            case 0x02: // 唤醒�?
+            case 0x02:
                 break;
-            case 0x03: // 增大音量
+            case 0x03:
                 if(g_volume < 6) {
                     g_volume++;
-                    XRVoice_SetVolume(g_volume); // 同步到语音模�?
+                    XRVoice_SetVolume(g_volume);
                 }
                 break;
-            case 0x04: // 减小音量
+            case 0x04:
                 if(g_volume > 1) {
                     g_volume--;
-                    XRVoice_SetVolume(g_volume); // 同步到语音模�?
+                    XRVoice_SetVolume(g_volume);
                 }
                 break;
-            case 0x05: // 最大音�?
+            case 0x05:
                 g_volume = 6;
-                XRVoice_SetVolume(g_volume); // 同步到语音模�?
+                XRVoice_SetVolume(g_volume);
                 break;
-            case 0x06: // 中等音量
+            case 0x06:
                 g_volume = 3;
-                XRVoice_SetVolume(g_volume); // 同步到语音模�?
+                XRVoice_SetVolume(g_volume);
                 break;
-            case 0x07: // 最小音�?
+            case 0x07:
                 g_volume = 1;
-                XRVoice_SetVolume(g_volume); // 同步到语音模�?
+                XRVoice_SetVolume(g_volume);
                 break;
-            case 0x08: // 开启播�?
+            case 0x08:
                 break;
-            case 0x09: // 关闭播报
+            case 0x09:
                 break;
         }
         return;
     }
-    
-    // 处理Type=08命令（现在是什么时候）
+
+
     if(cmd_type == 0x08)
     {
         switch(cmd_id)
         {
-            case 0x00: // 现在是什么时�?
+            case 0x00:
                 Voice_Play_Current_Time_With_Period();
                 break;
         }
         return;
     }
-    
-    // 处理Type=10命令（点�?
+
+
     if(cmd_type == 0x10)
     {
         switch(cmd_id)
         {
-            case 0x00: // �?
-                // 这里可以添加点的处理逻辑
+            case 0x00:
+
                 break;
         }
         return;
     }
-    
-    // 处理Type=02命令
+
+
     if(cmd_type == 0x02)
     {
         switch(cmd_id)
         {
-            case 0x00: // 联系监护�?
+            case 0x00:
                 break;
-            case 0x01: // 停下
+            case 0x01:
                 break;
-            case 0x02: // 打开盖子
+            case 0x02:
                 Servo_Open();
                 break;
-            case 0x03: // 关闭盖子
+            case 0x03:
                 Servo_Close();
-                
-                // 停止闹钟状�?
+
+
                 if(g_alarm_ringing)
                 {
                     g_alarm_ringing = 0;
                     g_light_changed = 0;
                     LED0_OFF();
-                    
+
                     if(display_mode == 0) {
                         OLED_ShowString(4, 1, "Medicine taken! ");
                     }
                 }
-                
-                // 停止空盒报警
+
+
                 if(g_empty_box_alarm_active)
                 {
                     g_stop_empty_box_alarm = 1;
                     LED0_OFF();
                 }
                 break;
-            case 0x04: // 修改闹钟
+            case 0x04:
                 g_voice_alarm_edit = 1;
-                display_mode = 2; // 切换到闹钟设置界�?
-                // 不主动播放语音，等待用户输入
+                display_mode = 2;
+
                 break;
-            case 0x05: // 闹钟一
+            case 0x05:
                 if(g_voice_alarm_edit == 1)
                 {
                     g_voice_alarm_index = 1;
-                    g_voice_alarm_edit = 2; // 进入等待小时输入状�?
-                    XRVoice_PlayRaw(0x02, 0x05); // 播报"请时钟分钟分开说数�?
+                    g_voice_alarm_edit = 2;
+                    XRVoice_PlayRaw(0x02, 0x05);
                 }
                 break;
-            case 0x06: // 闹钟�?
+            case 0x06:
                 if(g_voice_alarm_edit == 1)
                 {
                     g_voice_alarm_index = 2;
-                    g_voice_alarm_edit = 2; // 进入等待小时输入状�?
-                    XRVoice_PlayRaw(0x02, 0x06); // 播报"请时钟分钟分开说数�?
+                    g_voice_alarm_edit = 2;
+                    XRVoice_PlayRaw(0x02, 0x06);
                 }
                 break;
-            case 0x07: // 闹钟�?
+            case 0x07:
                 if(g_voice_alarm_edit == 1)
                 {
                     g_voice_alarm_index = 3;
-                    g_voice_alarm_edit = 2; // 进入等待小时输入状�?
-                    XRVoice_PlayRaw(0x02, 0x07); // 播报"请时钟分钟分开说数�?
+                    g_voice_alarm_edit = 2;
+                    XRVoice_PlayRaw(0x02, 0x07);
                 }
                 break;
-            case 0x08: // �?
+            case 0x08:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 0;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x02, 0x08); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x02, 0x08);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 0;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x02, 0x08); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x02, 0x08);
                 }
                 break;
-            case 0x09: // 一
+            case 0x09:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 1;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x02, 0x09); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x02, 0x09);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 1;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x02, 0x09); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x02, 0x09);
                 }
                 break;
-            case 0x0A: // �?
+            case 0x0A:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 2;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x02, 0x0A); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x02, 0x0A);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 2;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x02, 0x0A); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x02, 0x0A);
                 }
                 break;
-            case 0x0B: // �?
+            case 0x0B:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 3;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x02, 0x0B); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x02, 0x0B);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 3;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x02, 0x0B); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x02, 0x0B);
                 }
                 break;
-            case 0x0C: // �?
+            case 0x0C:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 4;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x02, 0x0C); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x02, 0x0C);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 4;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x02, 0x0C); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x02, 0x0C);
                 }
                 break;
         }
         return;
     }
-    
-    // 处理Type=03命令
+
+
     if(cmd_type == 0x03)
     {
         switch(cmd_id)
         {
-            case 0x00: // �?
+            case 0x00:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 5;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x00); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x00);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 5;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x00); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x00);
                 }
                 break;
-            case 0x01: // �?
+            case 0x01:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 6;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x01); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x01);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 6;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x01); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x01);
                 }
                 break;
-            case 0x02: // �?
+            case 0x02:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 7;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x02); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x02);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 7;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x02); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x02);
                 }
                 break;
-            case 0x03: // �?
+            case 0x03:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 8;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x03); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x03);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 8;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x03); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x03);
                 }
                 break;
-            case 0x04: // �?
+            case 0x04:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 9;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x04); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x04);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 9;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x04); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x04);
                 }
                 break;
-            case 0x05: // �?
+            case 0x05:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 10;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x05); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x05);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 10;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x05); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x05);
                 }
                 break;
-            case 0x06: // 十一
+            case 0x06:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 11;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x06); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x06);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 11;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x06); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x06);
                 }
                 break;
-            case 0x07: // 十二
+            case 0x07:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 12;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x07); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x07);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 12;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x07); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x07);
                 }
                 break;
-            case 0x08: // 十三
+            case 0x08:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 13;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x08); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x08);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 13;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x08); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x08);
                 }
                 break;
-            case 0x09: // 十四
+            case 0x09:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 14;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x09); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x09);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 14;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x09); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x09);
                 }
                 break;
-            case 0x0A: // 十五
+            case 0x0A:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 15;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x0A); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x0A);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 15;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x0A); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x0A);
                 }
                 break;
-            case 0x0B: // 十六
+            case 0x0B:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 16;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x0B); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x0B);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 16;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x0B); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x0B);
                 }
                 break;
-            case 0x0C: // 十七
+            case 0x0C:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 17;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x03, 0x0C); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x03, 0x0C);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 17;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x03, 0x0C); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x03, 0x0C);
                 }
                 break;
         }
         return;
     }
-    
-    // 处理Type=04命令
+
+
     if(cmd_type == 0x04)
     {
-        // 小时输入验证�?-23
+
         if(g_voice_alarm_edit == 2 && cmd_id >= 0x06) {
-            // 小时输入错误，超出范�?
-            XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
+
+            XRVoice_PlayRaw(0x05, 0x00);
             return;
         }
-        
+
         switch(cmd_id)
         {
-            case 0x00: // 十八
+            case 0x00:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 18;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x04, 0x00); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x04, 0x00);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 18;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x00); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x00);
                 }
                 break;
-            case 0x01: // 十九
+            case 0x01:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 19;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x04, 0x01); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x04, 0x01);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 19;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x01); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x01);
                 }
                 break;
-            case 0x02: // 二十
+            case 0x02:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 20;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x04, 0x02); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x04, 0x02);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 20;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x02); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x02);
                 }
                 break;
-            case 0x03: // 二十一
+            case 0x03:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 21;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x04, 0x03); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x04, 0x03);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 21;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x03); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x03);
                 }
                 break;
-            case 0x04: // 二十�?
+            case 0x04:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 22;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x04, 0x04); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x04, 0x04);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 22;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x04); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x04);
                 }
                 break;
-            case 0x05: // 二十�?
+            case 0x05:
                 if(g_voice_alarm_edit == 2)
                 {
                     g_voice_alarm_hour = 23;
-                    // 立即更新闹钟时间（分钟保持不变）
+
                     uint8_t alarm_index = g_voice_alarm_index - 1;
                     if(alarm_index < 3) {
                         g_bt_alarms[alarm_index].hour = g_voice_alarm_hour;
-                        // 刷新OLED显示
+
                         RefreshAlarmDisplay();
                     }
-                    g_voice_alarm_edit = 3; // 进入等待分钟输入状�?
-                    XRVoice_PlayRaw(0x04, 0x05); // 播报"录入成功"
+                    g_voice_alarm_edit = 3;
+                    XRVoice_PlayRaw(0x04, 0x05);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 23;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x05); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x05);
                 }
                 break;
-            case 0x06: // 二十�?
+            case 0x06:
                 if(g_voice_alarm_edit == 2)
                 {
-                    // 小时输入错误，超出范�?
-                    XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
+
+                    XRVoice_PlayRaw(0x05, 0x00);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 24;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x06); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x06);
                 }
                 break;
-            // 其他分钟数字处理...
-            case 0x07: // 二十�?
+
+            case 0x07:
                 if(g_voice_alarm_edit == 2)
                 {
-                    // 小时输入错误，超出范�?
-                    XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
+
+                    XRVoice_PlayRaw(0x05, 0x00);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 25;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x07); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x07);
                 }
                 break;
-            case 0x08: // 二十�?
+            case 0x08:
                 if(g_voice_alarm_edit == 2)
                 {
-                    // 小时输入错误，超出范�?
-                    XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
+
+                    XRVoice_PlayRaw(0x05, 0x00);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 26;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x08); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x08);
                 }
                 break;
-            case 0x09: // 二十�?
+            case 0x09:
                 if(g_voice_alarm_edit == 2)
                 {
-                    // 小时输入错误，超出范�?
-                    XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
+
+                    XRVoice_PlayRaw(0x05, 0x00);
                 }
                 else if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 27;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x09); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x09);
                 }
                 break;
-            case 0x10: // 二十�?
+            case 0x10:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 28;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x10); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x10);
                 }
                 break;
-            case 0x11: // 二十�?
+            case 0x11:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 29;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x11); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x11);
                 }
                 break;
-            case 0x12: // 三十
+            case 0x12:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 30;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x12); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x12);
                 }
                 break;
-            case 0x13: // 三十一
+            case 0x13:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 31;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x13); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x13);
                 }
                 break;
-            case 0x14: // 三十�?
+            case 0x14:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 32;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x14); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x14);
                 }
                 break;
-            case 0x15: // 三十�?
+            case 0x15:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 33;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x15); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x15);
                 }
                 break;
-            case 0x16: // 三十�?
+            case 0x16:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 34;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x16); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x16);
                 }
                 break;
-            case 0x17: // 三十�?
+            case 0x17:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 35;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x17); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x17);
                 }
                 break;
-            case 0x18: // 三十�?
+            case 0x18:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 36;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x18); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x18);
                 }
                 break;
-            case 0x19: // 三十�?
+            case 0x19:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 37;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x19); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x19);
                 }
                 break;
-            case 0x20: // 三十�?
+            case 0x20:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 38;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x20); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x20);
                 }
                 break;
-            case 0x21: // 三十�?
+            case 0x21:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 39;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x21); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x21);
                 }
                 break;
-            case 0x22: // 四十
+            case 0x22:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 40;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x22); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x22);
                 }
                 break;
-            case 0x23: // 四十一
+            case 0x23:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 41;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x23); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x23);
                 }
                 break;
-            case 0x24: // 四十�?
+            case 0x24:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 42;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x24); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x24);
                 }
                 break;
-            case 0x25: // 四十�?
+            case 0x25:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 43;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x25); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x25);
                 }
                 break;
-            case 0x26: // 四十�?
+            case 0x26:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 44;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x26); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x26);
                 }
                 break;
-            case 0x27: // 四十�?
+            case 0x27:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 45;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x27); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x27);
                 }
                 break;
-            case 0x28: // 四十�?
+            case 0x28:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 46;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x28); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x28);
                 }
                 break;
-            case 0x29: // 四十�?
+            case 0x29:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 47;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x29); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x29);
                 }
                 break;
-            case 0x30: // 四十�?
+            case 0x30:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 48;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x30); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x30);
                 }
                 break;
-            case 0x31: // 四十�?
+            case 0x31:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 49;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x31); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x31);
                 }
                 break;
-            case 0x32: // 五十
+            case 0x32:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 50;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x32); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x32);
                 }
                 break;
-            case 0x33: // 五十一
+            case 0x33:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 51;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x33); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x33);
                 }
                 break;
-            case 0x34: // 五十�?
+            case 0x34:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 52;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x34); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x34);
                 }
                 break;
-            case 0x35: // 五十�?
+            case 0x35:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 53;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x35); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x35);
                 }
                 break;
-            case 0x36: // 五十�?
+            case 0x36:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 54;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x36); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x36);
                 }
                 break;
-            case 0x37: // 五十�?
+            case 0x37:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 55;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x37); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x37);
                 }
                 break;
-            case 0x38: // 五十�?
+            case 0x38:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 56;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x38); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x38);
                 }
                 break;
-            case 0x39: // 五十�?
+            case 0x39:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 57;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x39); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x39);
                 }
                 break;
-            case 0x40: // 五十�?
+            case 0x40:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 58;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x40); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x40);
                 }
                 break;
-            case 0x41: // 五十�?
+            case 0x41:
                 if(g_voice_alarm_edit == 3)
                 {
                     g_voice_alarm_minute = 59;
                     UpdateAlarmTime(g_voice_alarm_index, g_voice_alarm_hour, g_voice_alarm_minute);
-                    g_voice_alarm_edit = 0; // 退出修改模�?
-                    XRVoice_PlayRaw(0x04, 0x41); // 播报"录入成功"
+                    g_voice_alarm_edit = 0;
+                    XRVoice_PlayRaw(0x04, 0x41);
                 }
                 break;
-            case 0x42: // 六十
+            case 0x42:
                 if(g_voice_alarm_edit == 3)
                 {
-                    // 分钟输入错误，超出范�?
-                    XRVoice_PlayRaw(0x05, 0x00); // 播报"错误，请重新输入"
+
+                    XRVoice_PlayRaw(0x05, 0x00);
                 }
                 break;
         }
         return;
     }
-    
-    // 处理Type=05命令
+
+
     if(cmd_type == 0x05)
     {
         switch(cmd_id)
         {
-            case 0x00: // 错误
+            case 0x00:
                 break;
         }
         return;
     }
-    
-    // 处理Type=08命令
+
+
     if(cmd_type == 0x08)
     {
         switch(cmd_id)
         {
-            case 0x00: // 现在是什么时�?
+            case 0x00:
             {
                 uint8_t hour = current_hour;
                 uint8_t play_cmd_type = 0x08;
                 uint8_t play_cmd_id;
-                
+
                 if(hour < 6)
                 {
                     play_cmd_id = 0x03;
@@ -1150,40 +1153,40 @@ void HandleVoiceCommand(uint8_t cmd_type, uint8_t cmd_id)
                 {
                     play_cmd_id = 0x08;
                 }
-                
+
                 XRVoice_PlayRaw(play_cmd_type, play_cmd_id);
                 break;
             }
-            case 0x01: // 欢迎
+            case 0x01:
                 break;
-            case 0x03: // 现在是凌�?
+            case 0x03:
                 break;
-            case 0x04: // 现在是早�?
+            case 0x04:
                 break;
-            case 0x05: // 现在是中�?
+            case 0x05:
                 break;
-            case 0x06: // 现在是下�?
+            case 0x06:
                 break;
-            case 0x07: // 现在是傍�?
+            case 0x07:
                 break;
-            case 0x08: // 现在是晚�?
+            case 0x08:
                 break;
         }
         return;
     }
-    
-    // 处理Type=09命令
+
+
     if(cmd_type == 0x09)
     {
         switch(cmd_id)
         {
-            case 0x00: // 空盒
+            case 0x00:
                 break;
-            case 0x01: // 闹钟一
+            case 0x01:
                 break;
-            case 0x02: // 闹钟�?
+            case 0x02:
                 break;
-            case 0x03: // 闹钟�?
+            case 0x03:
                 break;
         }
         return;

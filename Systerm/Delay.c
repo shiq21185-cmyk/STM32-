@@ -26,7 +26,7 @@ void Delay_ms1(uint32_t xms)
 		Delay_us(1000);
 	}*/
 }
- 
+
 /**
   * @brief  秒级延时
   * @param  xs 延时时长，范围：0~4294967295
@@ -38,7 +38,7 @@ void Delay_s1(uint32_t xs)
 	{
 		Delay_ms(1000);
 	}*/
-} 
+}
 
 /**
   * @brief  微秒级延时（使用TIM4）
@@ -48,7 +48,7 @@ void Delay_s1(uint32_t xs)
 void Delay_us(uint32_t xus)
 {
     if(xus > 65535) xus = 65535;  // 限制最大值
-    
+
     TIM_SetCounter(TIM4, 0);
     while(TIM_GetCounter(TIM4) < xus);
 }

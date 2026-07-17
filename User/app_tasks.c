@@ -1,4 +1,4 @@
-﻿#include "app_tasks.h"
+#include "app_tasks.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -198,13 +198,13 @@ void CheckAndTriggerUpload_Weight(void)
 {
     static TickType_t last_upload_tick = 0;
     TickType_t now = xTaskGetTickCount();
-    
+
     // 防抖：同一数据最小间隔
     if((now - last_upload_tick) < pdMS_TO_TICKS(UPLOAD_DEBOUNCE_MS))
         return;
-    
+
     s32 weight_diff = abs(weight - last_upload_weight);
-    
+
     if(weight_diff >= WEIGHT_UPLOAD_THRESHOLD)
     {
         g_upload_trigger_weight = 1;
@@ -219,10 +219,10 @@ void CheckAndTriggerUpload_Status(void)
 {
     static TickType_t last_upload_tick = 0;
     TickType_t now = xTaskGetTickCount();
-    
+
     if((now - last_upload_tick) < pdMS_TO_TICKS(UPLOAD_DEBOUNCE_MS))
         return;
-    
+
     // 检查盒子状态
     if(g_box_state != g_last_box_state)
     {
@@ -231,7 +231,7 @@ void CheckAndTriggerUpload_Status(void)
         g_upload_display_tick = now;
         g_last_box_state = g_box_state;
     }
-    
+
     // 检查闹钟状态
     if(g_alarm_state != g_last_alarm_state)
     {
@@ -240,7 +240,7 @@ void CheckAndTriggerUpload_Status(void)
         g_upload_display_tick = now;
         g_last_alarm_state = g_alarm_state;
     }
-    
+
     // 检查药盒内容状态
     if(g_box_content_state != g_last_box_content_state)
     {
@@ -249,7 +249,7 @@ void CheckAndTriggerUpload_Status(void)
         g_upload_display_tick = now;
         g_last_box_content_state = g_box_content_state;
     }
-    
+
     last_upload_tick = now;
 }
 
@@ -257,9 +257,9 @@ void CheckAndTriggerUpload_Status(void)
 void ProcessUploadQueue(void)
 {
     char payload[32];
-    
+
     // 优先级：状态 > 重量 > 温度 > 湿度
-    
+
     // 盒子状态上传
     if(g_upload_trigger_box)
     {
@@ -268,7 +268,7 @@ void ProcessUploadQueue(void)
         g_upload_trigger_box = 0;
         return; // 每次只处理一个，避免阻塞
     }
-    
+
     // 闹钟状态上传
     if(g_upload_trigger_alarm)
     {
@@ -277,7 +277,7 @@ void ProcessUploadQueue(void)
         g_upload_trigger_alarm = 0;
         return;
     }
-    
+
     // 药盒内容状态上传
     if(g_upload_trigger_box_content)
     {
@@ -286,7 +286,7 @@ void ProcessUploadQueue(void)
         g_upload_trigger_box_content = 0;
         return;
     }
-    
+
     if(g_upload_trigger_weight)
     {
         // 内部重量单位为0.1g，上传时转换为带一位小数的克数。
@@ -296,7 +296,7 @@ void ProcessUploadQueue(void)
         g_upload_trigger_weight = 0;
         return;
     }
-    
+
     if(g_upload_trigger_temp)
     {
         sprintf(payload, "%.1f", temperature);
@@ -305,7 +305,7 @@ void ProcessUploadQueue(void)
         g_upload_trigger_temp = 0;
         return;
     }
-    
+
     if(g_upload_trigger_humid)
     {
         sprintf(payload, "%.1f", humidity);
@@ -324,7 +324,7 @@ void ProcessUploadQueue(void)
 void Voice_Play(uint8_t index)
 {
     if(index < 1 || index > 9) return;
-	
+
     XRVoice_Play(index);
 }
 
@@ -345,7 +345,7 @@ void Voice_Play_Number(uint8_t num)
 void Voice_Play_Number_Full(uint8_t num)
 {
     if(num > 60) return;
-    
+
     if(num <= 9)
     {
         XRVoice_PlayRaw(voice_numbers_0_9[num].cmd_high, voice_numbers_0_9[num].cmd_low);
@@ -362,18 +362,18 @@ void Voice_Play_Current_Time(void)
 {
     uint8_t hour, minute, second;
     Get_Current_Time(&hour, &minute, &second);
-    
+
     // 播放小时 (0-23)
     Voice_Play_Number_Full(hour);
     vTaskDelay(pdMS_TO_TICKS(150));
-    
+
     // 播放"点"
     Voice_Play_Dot();
     vTaskDelay(pdMS_TO_TICKS(150));
-    
+
     // 播放完整的分钟数
     Voice_Play_Number_Full(minute);
-	
+
 	vTaskDelay(pdMS_TO_TICKS(230));
 	//分
 	XRVoice_PlayRaw(0x10, 0x01);
@@ -383,7 +383,7 @@ void Voice_Play_Current_Time(void)
 void Voice_Play_Period(uint8_t hour)
 {
     uint8_t idx;
-    
+
     if(hour < 5)
     {
         idx = 0; // 凌晨
@@ -408,7 +408,7 @@ void Voice_Play_Period(uint8_t hour)
     {
         idx = 5; // 晚上
     }
-    
+
     XRVoice_PlayRaw(voice_periods[idx].cmd_high, voice_periods[idx].cmd_low);
 }
 
@@ -417,14 +417,14 @@ void Voice_Play_Current_Time_With_Period(void)
 {
     uint8_t hour, minute, second;
     Get_Current_Time(&hour, &minute, &second);
-    
+
     // 切换到屏幕二的时钟界面
     display_mode = 1;
-    
+
     // 根据时间判断时间段
     Voice_Play_Period(hour);
     vTaskDelay(pdMS_TO_TICKS(500));
-    
+
     // 播放当前时间
     Voice_Play_Current_Time();
 }
@@ -438,13 +438,13 @@ uint8_t ReadDHT11Data(void)
 {
     uint8_t retry = 3;
     uint8_t success = 0;
-    
+
     while(retry-- > 0 && !success)
     {
         __disable_irq();
         DHT11_REC_Data();
         __enable_irq();
-        
+
         if(rec_data[0] != 0 || rec_data[2] != 0)
         {
             if(rec_data[0] <= 100 && rec_data[2] <= 60)
@@ -454,13 +454,13 @@ uint8_t ReadDHT11Data(void)
                 success = 1;
             }
         }
-        
+
         if(!success)
         {
             vTaskDelay(pdMS_TO_TICKS(20));
         }
     }
-    
+
     return success;
 }
 
@@ -469,13 +469,13 @@ void CheckAndTriggerUpload(void)
 {
     static TickType_t last_upload_tick = 0;
     TickType_t now = xTaskGetTickCount();
-    
+
     // 检查上传间隔
     if((now - last_upload_tick) < pdMS_TO_TICKS(UPLOAD_MIN_INTERVAL))
     {
         return;
     }
-    
+
     // 检查温度变化
     if(fabs(temperature - last_upload_temp) >= TEMP_UPLOAD_THRESHOLD)
     {
@@ -498,7 +498,7 @@ void CheckAndTriggerUpload(void)
 void Fast_UploadData(uint8_t type)
 {
     char upload_payload[32];
-    
+
     if(type == 1)
     {
         sprintf(upload_payload, "%.1f", temperature);
@@ -513,7 +513,7 @@ void Fast_UploadData(uint8_t type)
         last_upload_humid = humidity;
         g_upload_status = 2;
     }
-    
+
     g_upload_display_tick = xTaskGetTickCount();
 }
 
@@ -527,7 +527,7 @@ void Update_Time(void)
     if(xTimeMutex != NULL) {
         xSemaphoreTake(xTimeMutex, portMAX_DELAY);
     }
-    
+
     current_second++;
     if(current_second >= 60)
     {
@@ -543,7 +543,7 @@ void Update_Time(void)
             }
         }
     }
-    
+
     if(xTimeMutex != NULL) {
         xSemaphoreGive(xTimeMutex);
     }
@@ -558,7 +558,7 @@ void Get_Current_Time(uint8_t *hour, uint8_t *minute, uint8_t *second)
     *hour = current_hour;
     *minute = current_minute;
     *second = current_second;
-    
+
     if(xTimeMutex != NULL) {
         xSemaphoreGive(xTimeMutex);
     }
@@ -570,18 +570,18 @@ uint8_t Calibrate_Time(uint8_t new_hour, uint8_t new_minute, uint8_t new_second,
     static uint8_t first_sync = 1;
     int32_t diff;
     uint8_t need_update = 0;
-    
+
     if(xTimeMutex != NULL) {
         xSemaphoreTake(xTimeMutex, portMAX_DELAY);
     }
-    
+
     int32_t sys_total_sec = current_hour * 3600 + current_minute * 60 + current_second;
     int32_t bt_total_sec = new_hour * 3600 + new_minute * 60 + new_second;
     diff = bt_total_sec - sys_total_sec;
-    
+
     if(diff > 43200) diff -= 86400;
     else if(diff < -43200) diff += 86400;
-    
+
     if(first_sync || force || abs(diff) > 3)
     {
         current_hour = new_hour;
@@ -597,11 +597,11 @@ uint8_t Calibrate_Time(uint8_t new_hour, uint8_t new_minute, uint8_t new_second,
         g_last_sync_tick = xTaskGetTickCount();
         need_update = 0;
     }
-    
+
     if(xTimeMutex != NULL) {
         xSemaphoreGive(xTimeMutex);
     }
-    
+
     return need_update;
 }
 
@@ -609,7 +609,7 @@ uint8_t Calibrate_Time(uint8_t new_hour, uint8_t new_minute, uint8_t new_second,
 uint8_t Is_Sync_Valid(void)
 {
     if(g_sync_status == 0) return 0;
-    
+
     TickType_t now = xTaskGetTickCount();
     if((now - g_last_sync_tick) > pdMS_TO_TICKS(SYNC_VALID_DURATION_MS))
     {
@@ -623,9 +623,9 @@ uint8_t Check_Alarm_Time(void)
 {
     uint8_t hour, minute, second;
     Get_Current_Time(&hour, &minute, &second);
-    
+
     extern volatile HC06_Alarm_t g_bt_alarms[3];
-    
+
     if(hour == g_bt_alarms[0].hour && minute == g_bt_alarms[0].minute && second == 0 && g_bt_alarms[0].enabled) {
         return 1;
     }
@@ -635,7 +635,7 @@ uint8_t Check_Alarm_Time(void)
     else if(hour == g_bt_alarms[2].hour && minute == g_bt_alarms[2].minute && second == 0 && g_bt_alarms[2].enabled) {
         return 3;
     }
-    
+
     return 0;
 }
 
@@ -653,7 +653,7 @@ void UpdateDisplay(void)
 void AppTaskCreate(void)
 {
     taskENTER_CRITICAL();
-    
+
     xTaskCreate(HX711_Task, "HX711_Task", 512, NULL, 4, &HX711_Task_Handle);
     xTaskCreate(Display_Task, "Display_Task", 512, NULL, 3, &Display_Task_Handle);
     xTaskCreate(DHT11_Task, "DHT11_Task", 512, NULL, 2, &DHT11_Task_Handle);
@@ -662,7 +662,7 @@ void AppTaskCreate(void)
     xTaskCreate(Time_Task, "Time_Task", 512, NULL, 4, &Time_Task_Handle);
     xTaskCreate(Servo_Task, "Servo_Task", 256, NULL, 3, &Servo_Task_Handle);
 	xTaskCreate(Voice_Task, "Voice_Task", 256, NULL, 6, &Voice_Task_Handle);
-	
+
     vTaskDelete(AppTaskCreate_Handle);
     taskEXIT_CRITICAL();
 }
@@ -676,23 +676,23 @@ void HX711_Task(void* parameter)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(200);
-    
+
     static uint8_t was_heavy = 0;              // 曾经重过（>15g）
     static uint8_t trigger_delay = 0;          // 触发延迟计数
     static uint8_t empty_box_alarm = 0;
     static uint32_t last_play_tick = 0;        // 上次播放时间
     static s32 filtered_weight = 0;            // 一阶低通滤波缓存，整数存储
     static uint8_t sync_counter = 0;            // 兜底同步计数器：200ms一次，强制同步一次
-    
+
     while (1)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-        
+
         portENTER_CRITICAL();
         Get_Weight();
         s32 raw_weight = Weight_Shiwu;
         portEXIT_CRITICAL();
-        
+
         /*
          * Get_Weight() 内部已经完成去极值平均，不能再做多次低通滤波，
          * 否则重量会按多个台阶逐步逼近真实值，响应明显变慢。
@@ -702,7 +702,7 @@ void HX711_Task(void* parameter)
         if(abs(filtered_weight - weight) >= WEIGHT_DISPLAY_DEADBAND) {
             weight = filtered_weight;
         }
-        
+
         if(tare_done)
         {
             // ========== 兜底同步：2秒检查一次重量，不一致才上传，不浪费流量 ==========
@@ -731,7 +731,7 @@ void HX711_Task(void* parameter)
             if(filtered_weight > 15) {  // 1.5g
                 was_heavy = 1;
                 trigger_delay = 0;
-                
+
                 // 如果之前在空盒状态，现在退出
                 if(empty_box_alarm) {
                     empty_box_alarm = 0;
@@ -744,7 +744,7 @@ void HX711_Task(void* parameter)
             // 2. 曾经重过且现在<1g：进入空盒状态
             else if(was_heavy && filtered_weight < 10) {  // 1.0g
                 trigger_delay++;
-                
+
                 // 连续3次确认后，进入空盒状态（增加确认次数避免传感器漂移误触发）
                 if(trigger_delay >= 3) {
                     empty_box_alarm = 1;   // 进入空盒状态（关键：保持这个标志）
@@ -770,13 +770,13 @@ void HX711_Task(void* parameter)
             else {
                 trigger_delay = 0;
             }
-            
+
             // ========== 空盒状态下的持续行为 ==========
             if(empty_box_alarm)
 {
     // 闪烁LED，每200ms翻转 = 2.5Hz
     LED0_Turn();
-    
+
     // 每5秒重复提醒一次
     if((xTaskGetTickCount() - last_play_tick) >= pdMS_TO_TICKS(5*TIME_TASK_DELAY_MS))
     {
@@ -784,7 +784,7 @@ void HX711_Task(void* parameter)
         XRVoice_PlayRaw(0x09, 0x00);
         last_play_tick = xTaskGetTickCount();
     }
-    
+
     // 检查是否退出空盒状态（重量恢复>1.5g）。
     if(filtered_weight > 15) {  // 1.5g
         empty_box_alarm = 0;
@@ -812,9 +812,9 @@ void Voice_Task(void* parameter)
 {
     XRVoice_Init(Voice_Command_Callback);
     XRVoice_SetVolume(g_volume); // 初始化设置音量
-    
+
     vTaskDelay(pdMS_TO_TICKS(100));
-    
+
     // 播放欢迎语
     static uint8_t welcome_played = 0;
     if(!welcome_played) {
@@ -822,7 +822,7 @@ void Voice_Task(void* parameter)
         // vTaskDelay(pdMS_TO_TICKS(2000)); // 等待语音播放完成 - 已注释掉，不等待语音播放完成，避免阻塞任务
         welcome_played = 1;
     }
-    
+
     while (1)
     {
         // 等待语音指令信号，超时10ms
@@ -844,17 +844,17 @@ void DHT11_Task(void* parameter)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(500);
-    
+
     while (1)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-        
+
         __disable_irq();
         DHT11_REC_Data();
         __enable_irq();
-        
+
         uint8_t success = 0;
-        if(rec_data[0] != 0 && rec_data[2] != 0 && 
+        if(rec_data[0] != 0 && rec_data[2] != 0 &&
            rec_data[0] <= 100 && rec_data[2] <= 60)
         {
             humidity = rec_data[0] + rec_data[1] * 0.1f;
@@ -867,7 +867,7 @@ void DHT11_Task(void* parameter)
         {
             dht11_last_status = 2;
         }
-        
+
         if(display_mode == 0 && !success)
         {
             OLED_ShowChar(2, 16, 'F');
@@ -884,7 +884,7 @@ void Display_Task(void* parameter)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(50); // 从100ms改到50ms，加快蓝牙指令响应速度
-    
+
     uint32_t last_temp = 0xFFFFFFFF, last_humid = 0xFFFFFFFF, last_weight = 0xFFFFFFFF;
     uint8_t last_mode = 0xFF;
     uint8_t last_has_bt = 0xFF;
@@ -892,32 +892,32 @@ void Display_Task(void* parameter)
     uint8_t last_upload_status = 0;
     uint8_t last_dht_status = 0;
     uint8_t last_sync_valid = 0xFF;
-    
+
     uint8_t prev_hour = 0xFF, prev_minute = 0xFF, prev_second = 0xFF;
-    
+
     // 屏幕3编辑模式相关
     uint8_t last_edit_mode = 0xFF;
     uint8_t last_edit_field = 0xFF;
     uint8_t last_volume = 0xFF;
-    
+
     while (1)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-        
+
         HC06_Time_t current_bt_time;
         uint8_t has_new_bt;
         uint8_t dht_status;
         uint8_t sync_valid;
         uint8_t disp_hour, disp_minute, disp_second;
-        
+
         disp_hour = current_hour;
         disp_minute = current_minute;
         disp_second = current_second;
-        
+
         uint8_t current_edit_mode, current_edit_field, current_volume;
-        
+
         taskENTER_CRITICAL();
-        current_bt_time.hour = g_bt_time.hour; 
+        current_bt_time.hour = g_bt_time.hour;
         current_bt_time.minute = g_bt_time.minute;
         current_bt_time.second = g_bt_time.second;
         // 先读数据再取标志，避免中间来数据被清零丢包
@@ -935,7 +935,7 @@ void Display_Task(void* parameter)
         current_volume = g_volume;
         if(key_pressed) g_key1_pressed = 0;
         taskEXIT_CRITICAL();
-        
+
         if(upload_status != 0) {
             if((xTaskGetTickCount() - g_upload_display_tick) > pdMS_TO_TICKS(400)) {
                 upload_status = 0;
@@ -943,49 +943,49 @@ void Display_Task(void* parameter)
                 force_refresh = 1;
             }
         }
-        
+
         if(has_new_bt) {
             // 蓝牙主动发过来的时间都是用户设置的有效时间，直接更新
             // 13:10的错误时间已经在hc06.c底层过滤，不会到这里
             Calibrate_Time(current_bt_time.hour, current_bt_time.minute, current_bt_time.second, 1); // force=1强制更新
         }
-        
+
         uint8_t mode_changed = (current_mode != last_mode);
-        uint8_t time_changed = (disp_hour != prev_hour || 
-                               disp_minute != prev_minute || 
+        uint8_t time_changed = (disp_hour != prev_hour ||
+                               disp_minute != prev_minute ||
                                disp_second != prev_second);
         uint8_t bt_status_changed = (has_new_bt != last_has_bt);
         uint8_t upload_changed = (upload_status != last_upload_status);
         uint8_t dht_changed = (dht_status != last_dht_status);
         uint8_t sync_changed = (sync_valid != last_sync_valid);
-        uint8_t edit_changed = (current_edit_mode != last_edit_mode) || 
+        uint8_t edit_changed = (current_edit_mode != last_edit_mode) ||
                                (current_edit_field != last_edit_field);
         uint8_t volume_changed = (current_volume != last_volume);
-        
-        if(mode_changed || key_pressed || upload_changed || bt_status_changed || 
+
+        if(mode_changed || key_pressed || upload_changed || bt_status_changed ||
            sync_changed || time_changed || edit_changed || volume_changed) {
             force_refresh = 1;
             if(mode_changed) OLED_Clear();
         }
-        
+
         prev_hour = disp_hour;
         prev_minute = disp_minute;
         prev_second = disp_second;
-        
+
         switch(current_mode) {
             case 0:  // 屏幕一：主界面显示温湿度重量
             {
                 uint32_t current_temp = (uint32_t)(temperature * 10);
                 uint32_t current_humid = (uint32_t)(humidity * 10);
                 uint32_t current_weight_val = (uint32_t)weight;
-                
-                uint8_t data_changed = (current_temp != last_temp) || 
+
+                uint8_t data_changed = (current_temp != last_temp) ||
                                        (current_humid != last_humid) ||
                                        (current_weight_val != last_weight);
-                
-                uint8_t need_update = force_refresh || data_changed || 
+
+                uint8_t need_update = force_refresh || data_changed ||
                                      upload_changed || dht_changed;
-                
+
                 if(need_update)
                 {
                     // 温度显示
@@ -1003,14 +1003,14 @@ void Display_Task(void* parameter)
                         OLED_ShowNum(1, 7, (uint32_t)(-temperature * 10) % 10, 1);
                         OLED_ShowChar(1, 8, 'C');
                     }
-                    
+
                     // 湿度显示
                     OLED_ShowString(2, 1, "H:");
                     OLED_ShowNum(2, 3, (uint32_t)humidity, 2);
                     OLED_ShowString(2, 5, ".");
                     OLED_ShowNum(2, 6, (uint32_t)(humidity * 10) % 10, 1);
                     OLED_ShowString(2, 7, "%    ");
-                    
+
                     // 重量显示
                     OLED_ShowString(3, 1, "W:");
                     /* 内部单位为0.1g，显示为“整数.小数g”。 */
@@ -1024,7 +1024,7 @@ void Display_Task(void* parameter)
                     OLED_ShowString(3, 8, ".");
                     OLED_ShowNum(3, 9, display_weight % 10, 1);
                     OLED_ShowString(3, 10, "g   ");
-                    
+
                     // 上传状态显示
                     if(upload_status == UPLOAD_TYPE_TEMP) {
 						OLED_ShowString(4, 1, "Temp Uploaded   ");
@@ -1040,12 +1040,12 @@ void Display_Task(void* parameter)
 					} else {
 						OLED_ShowString(4, 1, "                ");  // 清空
 					}
-                    
+
                     // ========== 数据变化时立即触发上传检查 ==========
                     if(data_changed) {
                         CheckAndTriggerUpload();
                     }
-                    
+
                     last_temp = current_temp;
                     last_humid = current_humid;
                     last_weight = current_weight_val;
@@ -1053,7 +1053,7 @@ void Display_Task(void* parameter)
                 }
                 break;
             }
-            
+
             case 1:  // 屏幕二：时间显示
             {
                 static uint32_t last_display_tick = 0;
@@ -1062,25 +1062,25 @@ void Display_Task(void* parameter)
                 static uint8_t last_s1 = 0xFF, last_s2 = 0xFF;
                 static uint8_t colon_drawn = 0;
                 uint32_t now = xTaskGetTickCount();
-                
+
                 uint8_t h1 = disp_hour / 10, h2 = disp_hour % 10;
                 uint8_t m1 = disp_minute / 10, m2 = disp_minute % 10;
                 uint8_t s1 = disp_second / 10, s2 = disp_second % 10;
-                
+
                 uint8_t h1_changed = (h1 != last_h1);
                 uint8_t h2_changed = (h2 != last_h2);
                 uint8_t m1_changed = (m1 != last_m1);
                 uint8_t m2_changed = (m2 != last_m2);
                 uint8_t s1_changed = (s1 != last_s1);
                 uint8_t s2_changed = (s2 != last_s2);
-                uint8_t any_num_changed = h1_changed || h2_changed || m1_changed || 
+                uint8_t any_num_changed = h1_changed || h2_changed || m1_changed ||
                                           m2_changed || s1_changed || s2_changed;
-                
-                if(any_num_changed || force_refresh || 
+
+                if(any_num_changed || force_refresh ||
                    (now - last_display_tick) >= pdMS_TO_TICKS(1000))
                 {
                     last_display_tick = now;
-                    
+
                     static uint8_t last_sync = 0xFF;
                     if(sync_valid != last_sync || force_refresh) {
                         last_sync = sync_valid;
@@ -1090,48 +1090,48 @@ void Display_Task(void* parameter)
                             OLED_ShowString(1, 1, "[No Sync]       ");
                         }
                     }
-                    
+
                     if(h1_changed || force_refresh) {
                         OLED_Show16x32Char(2, 1, '0' + h1);
                         last_h1 = h1;
                     }
-                    
+
                     if(h2_changed || force_refresh) {
                         OLED_Show16x32Char(2, 3, '0' + h2);
                         last_h2 = h2;
                     }
-                    
+
                     if(!colon_drawn || force_refresh) {
                         OLED_Show16x32Char(2, 5, ':');
                         colon_drawn = 1;
                     }
-                    
+
                     if(m1_changed || force_refresh) {
                         OLED_Show16x32Char(2, 7, '0' + m1);
                         last_m1 = m1;
                     }
-             
+
                     if(m2_changed || force_refresh) {
                         OLED_Show16x32Char(2, 9, '0' + m2);
                         last_m2 = m2;
                     }
-                    
+
                     if(!colon_drawn || force_refresh) {
                         OLED_Show16x32Char(2, 11, ':');
                     }
-                    
+
                     if(s1_changed || force_refresh) {
                         OLED_Show16x32Char(2, 13, '0' + s1);
                         last_s1 = s1;
                     }
-                    
+
                     if(s2_changed || force_refresh) {
                         OLED_Show16x32Char(2, 15, '0' + s2);
                         last_s2 = s2;
                     }
-                    
+
                     OLED_ShowString(4, 1, "                ");
-                    
+
                     force_refresh = 0;
                 }
                 break;
@@ -1142,7 +1142,7 @@ void Display_Task(void* parameter)
                 if(g_bt_alarm_updated) {
                     force_refresh = 1;
                 }
-                
+
                 if(force_refresh || edit_changed || volume_changed)
                 {
                     // 第1行：标题
@@ -1151,7 +1151,7 @@ void Display_Task(void* parameter)
                     } else {
                         OLED_ShowString(1, 1, "    EDITING     ");
                     }
-                    
+
                     // 第2行：闹钟1
                     OLED_ShowString(2, 1, "1:");
                     if(current_edit_mode == EDIT_MODE_ALARM1) {
@@ -1176,7 +1176,7 @@ void Display_Task(void* parameter)
                         OLED_ShowNum(2, 6, g_bt_alarms[0].minute, 2);
                         OLED_ShowString(2, 8, "        ");
                     }
-                    
+
                     // 第3行：闹钟2
                     OLED_ShowString(3, 1, "2:");
                     if(current_edit_mode == EDIT_MODE_ALARM2) {
@@ -1201,10 +1201,10 @@ void Display_Task(void* parameter)
                         OLED_ShowNum(3, 6, g_bt_alarms[1].minute, 2);
                         OLED_ShowString(3, 8, "        ");
                     }
-                    
+
                     // 第4行：闹钟3 + 音量
                     OLED_ShowString(4, 1, "3:");
-                    
+
                     if (current_edit_mode == EDIT_MODE_ALARM3) {
                         if (current_edit_field == 0) {
                             OLED_ShowChar(4, 3, '>');
@@ -1241,7 +1241,7 @@ void Display_Task(void* parameter)
                         OLED_ShowNum(4, 13, current_volume, 1); // 音量最大是6，直接显示1位即可
                         OLED_ShowChar(4, 14, ' ');
                     }
-                    
+
                     force_refresh = 0;
                     last_edit_mode = current_edit_mode;
                     last_edit_field = current_edit_field;
@@ -1250,7 +1250,7 @@ void Display_Task(void* parameter)
                 break;
             }
         }
-        
+
         last_mode = current_mode;
         last_upload_status = upload_status;
         last_dht_status = dht_status;
@@ -1275,36 +1275,36 @@ void Time_Task(void* parameter)
     uint8_t alarm_triggered = 0;
     uint8_t last_alarm_index = 0;
     static uint32_t run_count = 0;
-    
+
     // 初始化光敏传感器
     LightSenor_Init();
     g_last_light_state = LightSenor_Get();
-    
+
     while (1)
     {
         vTaskDelay(pdMS_TO_TICKS(TIME_TASK_DELAY_MS));  // 约1秒
-        
+
         run_count++;
         Update_Time();
-        
+
         taskENTER_CRITICAL();
         g_time_task_run_count = run_count;
         taskEXIT_CRITICAL();
-        
+
         // 更新盒子状态
         if(g_servo_state) {
             g_box_state = BOX_OPEN;
         } else {
             g_box_state = BOX_CLOSED;
         }
-        
+
         // 更新闹钟状态
         if(g_alarm_ringing) {
             g_alarm_state = ALARM_RINGING;
         } else {
             g_alarm_state = ALARM_SILENT;
         }
-        
+
         // 更新药盒内容状态（这里需要根据实际的空盒检测逻辑来设置）
         // 假设g_empty_box_alarm_active表示药盒为空
         if(g_empty_box_alarm_active) {
@@ -1312,10 +1312,10 @@ void Time_Task(void* parameter)
         } else {
             g_box_content_state = BOX_NOT_EMPTY;
         }
-        
+
         // 触发状态上传
         CheckAndTriggerUpload_Status();
-        
+
         // 1. 检测光敏变化（只在亮变暗时触发）
         uint8_t current_light = LightSenor_Get();
         if(g_last_light_state == 0 && current_light == 1)
@@ -1327,10 +1327,10 @@ void Time_Task(void* parameter)
         {
             g_last_light_state = current_light;
         }
-        
+
         // 2. 检测闹钟时间
         uint8_t alarm_index = Check_Alarm_Time();
-        
+
         // 3. 闹钟触发处理
         if(alarm_index != 0)
         {
@@ -1344,36 +1344,36 @@ void Time_Task(void* parameter)
                 g_last_alarm_play_tick = xTaskGetTickCount();
                 g_last_led_toggle_tick = xTaskGetTickCount();
                 g_light_changed = 0;
-                
+
                 // 检查时间：19点-8点常亮
                 uint8_t hour, minute, second;
                 Get_Current_Time(&hour, &minute, &second);
                 if(hour >= 19 || hour < 8) {
                     LED0_ON();
                 }
-                
+
                 // 代码驱动播放对应的闹钟语音
                 // 闹钟1: 早上好，请记得吃药
                 // 闹钟2: 中午好，请记得吃药
                 // 闹钟3: 晚上好，请记得吃药
                 XRVoice_PlayRaw(0x09, alarm_index);  // alarm_index: 1->1, 2->2, 3->3
-                
+
                 if(display_mode == 0) {
                     OLED_ShowString(4, 1, "TAKE MEDICINE!  ");
                 }
-                
+
                 alarm_triggered = 1;
                 last_alarm_index = alarm_index;
             }
         }
-        
+
         // 4. 处理闹钟持续状态
         if(g_alarm_ringing)
         {
             // 检查时间：19点-8点常亮，其他时间闪烁
             uint8_t hour, minute, second;
             Get_Current_Time(&hour, &minute, &second);
-            
+
             if(hour >= 19 || hour < 8) {
                 // 19点-8点：LED常亮
                 LED0_ON();
@@ -1381,7 +1381,7 @@ void Time_Task(void* parameter)
                 // 其他时间：LED闪烁
                 LED0_Turn();
             }
-            
+
             // 检测到光敏变化（遮挡事件）
             if(g_light_changed)
             {
@@ -1402,13 +1402,13 @@ void Time_Task(void* parameter)
                     g_alarm_ringing = 0;
                     g_alarm_servo_state = 0;
                     alarm_triggered = 0;
-                    
+
                     // 关闭舵机
                     Servo_Close();
-                    
+
                     // 关闭LED
                     LED0_OFF();
-                    
+
                     if(display_mode == 0) {
                         OLED_ShowString(4, 1, "Medicine taken! ");
                     }
@@ -1422,7 +1422,7 @@ void Time_Task(void* parameter)
                 g_last_alarm_play_tick = xTaskGetTickCount();
             }
         }
-        
+
         // 5. 重置状态
         if(alarm_index == 0 && !g_alarm_ringing)
         {
@@ -1436,22 +1436,23 @@ void Key_Task(void* parameter)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(10); // 扫描周期从20ms缩短到10ms，按键响应更快
-    
+    uint8_t alarm_config_dirty = 0;
+
     while (1)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
         Key_Scan();
-        
+
         // 读取当前显示模式
         uint8_t current_mode;
         taskENTER_CRITICAL();
         current_mode = display_mode;
         taskEXIT_CRITICAL();
-        
+
         // ========== 任意按键处理闹钟（打开/关闭盖子） ==========
         if(g_alarm_ringing)  // 如果闹钟正在响
         {
-            if(Key_GetPress(KEY1) || Key_GetPress(KEY2) || 
+            if(Key_GetPress(KEY1) || Key_GetPress(KEY2) ||
                Key_GetPress(KEY3) || Key_GetPress(KEY4))
             {
                 // 第一次按键：打开盖子
@@ -1469,25 +1470,25 @@ void Key_Task(void* parameter)
                     // 停止闹钟
                     g_alarm_ringing = 0;
                     g_alarm_servo_state = 0;
-                    
+
                     // 关闭舵机
                     Servo_Close();
-                    
+
                     // 关闭LED
                     LED0_OFF();
-                    
+
                     if(display_mode == 0) {
                         OLED_ShowString(4, 1, "Medicine taken! ");
                     }
                 }
             }
         }
-        
+
         // ========== 空盒开盖后的首次按键：优先手动关盖 ==========
         // 放入物品后空盒报警会取消，但此标志仍保留，确保首次按键仍能关盖。
         if(g_empty_box_manual_close_pending)
         {
-            if(Key_GetPress(KEY1) || Key_GetPress(KEY2) || 
+            if(Key_GetPress(KEY1) || Key_GetPress(KEY2) ||
                Key_GetPress(KEY3) || Key_GetPress(KEY4))
             {
                 Servo_Close();
@@ -1504,7 +1505,7 @@ void Key_Task(void* parameter)
             if(edit_was_active) {
                 g_edit_mode = EDIT_MODE_NONE;
             }
-            
+
             display_mode++;
             if(display_mode > 2) {
                 display_mode = 0;
@@ -1512,12 +1513,17 @@ void Key_Task(void* parameter)
             g_key1_pressed = 1;
             uint8_t new_mode = display_mode;
             taskEXIT_CRITICAL();
-            
+
+            if(edit_was_active && alarm_config_dirty) {
+                HC06_SaveAlarms();
+                alarm_config_dirty = 0;
+            }
+
             // 如果是从编辑模式退出，先播报修改完成
             if(edit_was_active) {
                 XRVoice_PlayRaw(0x10, 0x05); // 播报修改完成
             }
-            
+
             // 播报当前界面
             if(new_mode == 0) {
                 XRVoice_PlayRaw(0x10, 0x02); // 数据界面（界面一）
@@ -1526,11 +1532,11 @@ void Key_Task(void* parameter)
             } else if(new_mode == 2) {
                 XRVoice_PlayRaw(0x10, 0x04); // 闹钟界面（界面三）
             }
-            
+
             OLED_Clear();
-			
+
         }
-        
+
         // PB9 - 屏幕3：进入/退出编辑，切换时分
         if(Key_GetPress(KEY2))
         {
@@ -1540,7 +1546,7 @@ void Key_Task(void* parameter)
                 taskENTER_CRITICAL();
                 uint8_t current_edit = g_edit_mode;
                 uint8_t current_field = g_edit_field;
-                
+
                 if(current_edit == EDIT_MODE_NONE) {
                     // 进入闹钟1编辑模式
                     g_edit_mode = EDIT_MODE_ALARM1;
@@ -1575,14 +1581,19 @@ void Key_Task(void* parameter)
                 else if(current_edit == EDIT_MODE_VOLUME) {
                     // 音量编辑完成，退出编辑模式
                     g_edit_mode = EDIT_MODE_NONE;
-                    
+
                     // 播报修改完成
                     XRVoice_PlayRaw(0x10, 0x05);
                 }
                 taskEXIT_CRITICAL();
+
+                if(current_edit == EDIT_MODE_VOLUME && alarm_config_dirty) {
+                    HC06_SaveAlarms();
+                    alarm_config_dirty = 0;
+                }
             }
         }
-        
+
         // PB6 - 屏幕3：减小
         if(Key_GetPress(KEY3))
         {
@@ -1591,7 +1602,7 @@ void Key_Task(void* parameter)
                 taskENTER_CRITICAL();
                 uint8_t current_edit = g_edit_mode;
                 uint8_t current_field = g_edit_field;
-                
+
                 if(current_edit == EDIT_MODE_ALARM1) {
                     if(current_field == 0) {
                         // 减小小时
@@ -1651,9 +1662,13 @@ void Key_Task(void* parameter)
 					}
 				}
                 taskEXIT_CRITICAL();
+
+                if(current_edit >= EDIT_MODE_ALARM1 && current_edit <= EDIT_MODE_ALARM3) {
+                    alarm_config_dirty = 1;
+                }
             }
         }
-        
+
         // PB7 - 屏幕3：增大
         if(Key_GetPress(KEY4))
         {
@@ -1662,7 +1677,7 @@ void Key_Task(void* parameter)
                 taskENTER_CRITICAL();
                 uint8_t current_edit = g_edit_mode;
                 uint8_t current_field = g_edit_field;
-                
+
                 if(current_edit == EDIT_MODE_ALARM1) {
                     if(current_field == 0) {
                         // 增大小時
@@ -1722,6 +1737,10 @@ void Key_Task(void* parameter)
 					}
 				}
                 taskEXIT_CRITICAL();
+
+                if(current_edit >= EDIT_MODE_ALARM1 && current_edit <= EDIT_MODE_ALARM3) {
+                    alarm_config_dirty = 1;
+                }
             }
         }
     }
@@ -1756,11 +1775,11 @@ void Servo_Close(void)
 void Servo_Task(void* parameter)
 {
     PWM_Init();
-    
+
     // 直接设置初始位置（关闭）
     PWM_SetCompare2(500 + (SERVO_ANGLE_CLOSE * 2000 / 180));
     g_servo_state = 0;
-    
+
     vTaskDelay(pdMS_TO_TICKS(1000));  // 给舵机1秒到位时间
 
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -1769,7 +1788,7 @@ void Servo_Task(void* parameter)
     while(1)
     {
         vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
-        
+
         taskENTER_CRITICAL();
         current_cmd = g_servo_cmd;
         g_servo_cmd = SERVO_CMD_NONE;

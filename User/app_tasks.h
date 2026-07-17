@@ -112,7 +112,7 @@ void Fast_UploadData(uint8_t type);
 void Update_Time(void);
 void Get_Current_Time(uint8_t *hour, uint8_t *minute, uint8_t *second);
 uint8_t Calibrate_Time(uint8_t new_hour, uint8_t new_minute, uint8_t new_second, uint8_t force);
-uint8_t Is_Sync_Valid(void); 
+uint8_t Is_Sync_Valid(void);
 uint8_t Check_Alarm_Time(void);
 void UpdateDisplay(void);
 void CheckAndTriggerUpload(void);

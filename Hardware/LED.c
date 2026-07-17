@@ -3,7 +3,7 @@
 
 void LED_Init(void){
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA,ENABLE);
-	
+
 	GPIO_InitTypeDef GPIO_InStructure;
 	GPIO_InStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InStructure.GPIO_Pin = GPIO_Pin_0;
@@ -11,7 +11,7 @@ void LED_Init(void){
 	GPIO_Init(GPIOA,&GPIO_InStructure);
 	/* PA0 为低电平点亮。临时调试：初始化后保持常亮。 */
 	GPIO_ResetBits(GPIOA,GPIO_Pin_0);
-	
+
 }
 
 

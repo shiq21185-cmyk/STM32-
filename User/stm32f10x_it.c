@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    Project/STM32F10x_StdPeriph_Template/stm32f10x_it.c 
+  * @file    Project/STM32F10x_StdPeriph_Template/stm32f10x_it.c
   * @author  MCD Application Team
   * @version V3.5.0
   * @date    08-April-2011
   * @brief   Main Interrupt Service Routines.
-  *          This file provides template for all exceptions handler and 
+  *          This file provides template for all exceptions handler and
   *          peripherals interrupt service routine.
   ******************************************************************************
   * @attention
@@ -135,13 +135,13 @@ void DebugMon_Handler(void)
   * @retval None
   */
 extern void xPortSysTickHandler(void);
-//systickÖÐ¶Ï·þÎñº¯Êý
+//systickï¿½Ð¶Ï·ï¿½ï¿½ï¿½ï¿½ï¿½
 void SysTick_Handler(void)
-{	
+{
     #if (INCLUDE_xTaskGetSchedulerState  == 1 )
       if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
       {
-    #endif  /* INCLUDE_xTaskGetSchedulerState */  
+    #endif  /* INCLUDE_xTaskGetSchedulerState */
         xPortSysTickHandler();
     #if (INCLUDE_xTaskGetSchedulerState  == 1 )
       }
@@ -166,7 +166,7 @@ void SysTick_Handler(void)
 
 /**
   * @}
-  */ 
+  */
 
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
